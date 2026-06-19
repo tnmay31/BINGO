@@ -1,1 +1,605 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <title>BINGO · Line Highlight</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Courier New', 'Segoe UI', monospace;
+      background: white;
+      height: 100vh;
+      width: 100vw;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 12px;
+      margin: 0;
+    }
+
+    .bingo-container {
+      max-width: 900px;
+      width: 100%;
+      height: auto;
+      max-height: 98vh;
+      background: white;
+      border: 2px solid black;
+      padding: 12px 12px 16px 12px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: none;
+    }
+
+    .bingo-letters {
+      display: flex;
+      justify-content: space-between;
+      gap: 6px;
+      margin-bottom: 12px;
+      border: 1px solid black;
+      padding: 8px 8px;
+      background: white;
+      font-size: 20px;
+    }
+
+    .letter-slot {
+      flex: 1;
+      text-align: center;
+      font-size: clamp(1.2rem, 6vw, 2rem);
+      font-weight: bold;
+      font-family: monospace;
+      padding: 4px 0;
+      border: 1px solid black;
+      background: white;
+      color: black;
+    }
+
+    .letter-slot.lit {
+      background: #222;
+      color: white;
+    }
+
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+      border: 1px solid black;
+      padding: 6px 10px;
+      background: white;
+    }
+
+    .game-status {
+      font-size: 0.8rem;
+      font-weight: bold;
+      font-family: monospace;
+      border: 1px solid black;
+      padding: 4px 8px;
+      white-space: nowrap;
+    }
+
+    .message-area {
+      font-family: monospace;
+      font-size: 0.7rem;
+      word-break: break-word;
+      border: 1px solid black;
+      padding: 4px 8px;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .bingo-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      background-color: white;
+      border: 2px solid black;
+      margin-bottom: 12px;
+      aspect-ratio: 1 / 1;
+    }
+
+    .grid-cell {
+      border: 1px solid black;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: clamp(1rem, 4.5vw, 1.6rem);
+      font-weight: 600;
+      font-family: monospace;
+      background: white;
+      cursor: pointer;
+      color: black;
+      text-align: center;
+      padding: 0;
+      transition: none;
+    }
+
+    .grid-cell.marked {
+      text-decoration: line-through;
+      text-decoration-thickness: 2.5px;
+      background: #e8e8e8;
+      border-color: #444;
+    }
+
+    .grid-cell.win-highlight {
+      background: #bdbd7a;
+      border-color: black;
+      font-weight: 800;
+      text-decoration: none;
+    }
+    .grid-cell.win-highlight.marked {
+      background: #bdbd7a;
+      text-decoration: line-through;
+    }
+
+    .action-bar {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin: 8px 0 8px 0;
+    }
+
+    button {
+      font-family: monospace;
+      font-size: 0.8rem;
+      background: white;
+      border: 1.5px solid black;
+      padding: 6px 12px;
+      cursor: pointer;
+      font-weight: bold;
+      flex: 1;
+      white-space: nowrap;
+    }
+
+    button:active {
+      background: #eaeaea;
+    }
+
+    .info-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-top: 6px;
+      padding-top: 8px;
+      border-top: 1px solid black;
+      flex-wrap: wrap;
+    }
+
+    .icon-info {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border: 1.5px solid black;
+      border-radius: 50%;
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+      background: white;
+      flex-shrink: 0;
+    }
+
+    .instruction-text {
+      font-family: monospace;
+      font-size: 0.6rem;
+      color: black;
+      flex: 1;
+      line-height: 1.2;
+    }
+
+    @media (max-width: 700px) {
+      body { padding: 8px; }
+      .bingo-container { padding: 8px; }
+      .letter-slot { padding: 2px 0; }
+      button { padding: 5px 8px; font-size: 0.7rem; }
+      .instruction-text { font-size: 0.55rem; }
+      .game-status { font-size: 0.7rem; }
+    }
+
+    @media (max-height: 650px) {
+      .bingo-letters { margin-bottom: 6px; padding: 4px; }
+      .info-row { margin-bottom: 6px; padding: 4px 8px; }
+      .action-bar { margin: 4px 0; }
+      .info-footer { margin-top: 2px; padding-top: 4px; }
+    }
+  </style>
+</head>
+<body>
+<div class="bingo-container">
+  <div class="bingo-letters" id="bingoLettersPanel">
+    <div class="letter-slot" data-letter="B">B</div>
+    <div class="letter-slot" data-letter="I">I</div>
+    <div class="letter-slot" data-letter="N">N</div>
+    <div class="letter-slot" data-letter="G">G</div>
+    <div class="letter-slot" data-letter="O">O</div>
+  </div>
+
+  <div class="info-row">
+    <div class="game-status" id="gamePhaseLabel">⚙️ SETUP</div>
+    <div class="message-area" id="statusMessage">Click empty cell → auto fills 1-25</div>
+  </div>
+
+  <div class="bingo-grid" id="bingoGrid"></div>
+
+  <div class="action-bar">
+    <button id="randomFillBtn">🎲 RANDOM FILL</button>
+    <button id="undoBtn">↩️ UNDO</button>
+    <button id="resetAllBtn">🔄 NEW GAME</button>
+  </div>
+  
+  <div class="info-footer">
+    <div class="icon-info" id="infoIconBtn" title="Game rules">ⓘ</div>
+    <div class="instruction-text" id="inlineInstructions">
+      ✔ Fill grid (auto/random). Then click any number to mark it. Complete lines light up and fill BINGO.
+    </div>
+  </div>
+</div>
+
+<script>
+  // ---------- STATE ----------
+  let gridNumbers = Array(5).fill().map(() => Array(5).fill(null));
+  let marked = Array(5).fill().map(() => Array(5).fill(false));
+  let nextNumber = 1;
+  let filledCount = 0;
+  let gameActive = false;
+  let gameWon = false;
+  let gameUndoStack = []; // for marking/unmarking in game
+
+  let bingoLettersLit = [false, false, false, false, false];
+
+  const gridContainer = document.getElementById('bingoGrid');
+  const phaseLabel = document.getElementById('gamePhaseLabel');
+  const statusMsgDiv = document.getElementById('statusMessage');
+  const undoBtn = document.getElementById('undoBtn');
+  const resetAllBtn = document.getElementById('resetAllBtn');
+  const randomFillBtn = document.getElementById('randomFillBtn');
+  const infoIconBtn = document.getElementById('infoIconBtn');
+  const letterSlots = document.querySelectorAll('.letter-slot');
+
+  // ---------- UI ----------
+  function updateBingoLettersUI() {
+    for (let i = 0; i < letterSlots.length; i++) {
+      letterSlots[i].classList.toggle('lit', bingoLettersLit[i]);
+    }
+  }
+  
+  function resetBingoLetters() {
+    bingoLettersLit = [false, false, false, false, false];
+    updateBingoLettersUI();
+  }
+
+  // ---------- LINE LOGIC ----------
+  function getCompletedLines() {
+    let rows = [], cols = [], diags = [];
+    for (let r = 0; r < 5; r++) {
+      let ok = true;
+      for (let c = 0; c < 5; c++) if (!marked[r][c]) { ok = false; break; }
+      if (ok) rows.push(r);
+    }
+    for (let c = 0; c < 5; c++) {
+      let ok = true;
+      for (let r = 0; r < 5; r++) if (!marked[r][c]) { ok = false; break; }
+      if (ok) cols.push(c);
+    }
+    let d1 = true;
+    for (let i = 0; i < 5; i++) if (!marked[i][i]) { d1 = false; break; }
+    if (d1) diags.push('main');
+    let d2 = true;
+    for (let i = 0; i < 5; i++) if (!marked[i][4-i]) { d2 = false; break; }
+    if (d2) diags.push('anti');
+    return { rows, cols, diags };
+  }
+
+  function countCompletedLinesTotal() {
+    const lines = getCompletedLines();
+    return lines.rows.length + lines.cols.length + lines.diags.length;
+  }
+
+  function refreshBingoLetters() {
+    if (gameWon) return;
+    let total = countCompletedLinesTotal();
+    let lit = Math.min(total, 5);
+    let newLit = [false, false, false, false, false];
+    for (let i = 0; i < lit; i++) newLit[i] = true;
+    let changed = false;
+    for (let i = 0; i < 5; i++) if (bingoLettersLit[i] !== newLit[i]) { changed = true; break; }
+    if (changed) {
+      bingoLettersLit = newLit;
+      updateBingoLettersUI();
+      if (bingoLettersLit[0] && bingoLettersLit[1] && bingoLettersLit[2] && bingoLettersLit[3] && bingoLettersLit[4]) {
+        gameWon = true;
+        gameActive = false;
+        phaseLabel.innerText = "🏆 BINGO! 🏆";
+        statusMsgDiv.innerText = "🎉 YOU WIN! Full BINGO! Press NEW GAME 🎉";
+      } else if (total > 0 && !gameWon) {
+        statusMsgDiv.innerText = `✨ ${total} line(s)! Keep marking to light BINGO ✨`;
+      }
+    }
+  }
+
+  function updateWinHighlight() {
+    const allCells = document.querySelectorAll('.grid-cell');
+    allCells.forEach(cell => cell.classList.remove('win-highlight'));
+    if (gameWon || !gameActive) return;
+    const completed = getCompletedLines();
+    const highlightSet = new Set();
+    for (let r of completed.rows) for (let c = 0; c < 5; c++) highlightSet.add(`${r},${c}`);
+    for (let c of completed.cols) for (let r = 0; r < 5; r++) highlightSet.add(`${r},${c}`);
+    if (completed.diags.includes('main')) for (let i = 0; i < 5; i++) highlightSet.add(`${i},${i}`);
+    if (completed.diags.includes('anti')) for (let i = 0; i < 5; i++) highlightSet.add(`${i},${4-i}`);
+    for (let i = 0; i < 5; i++) {
+      for (let j = 0; j < 5; j++) {
+        if (highlightSet.has(`${i},${j}`)) {
+          const idx = i * 5 + j;
+          if (allCells[idx]) allCells[idx].classList.add('win-highlight');
+        }
+      }
+    }
+  }
+
+  // ---------- RENDER ----------
+  function renderGrid() {
+    gridContainer.innerHTML = '';
+    for (let r = 0; r < 5; r++) {
+      for (let c = 0; c < 5; c++) {
+        const num = gridNumbers[r][c];
+        const isMarked = marked[r][c];
+        const cell = document.createElement('div');
+        cell.className = 'grid-cell';
+        if (isMarked) cell.classList.add('marked');
+        cell.innerText = (num !== null) ? num : '·';
+        if (num === null) cell.style.color = '#aaa';
+        cell.addEventListener('click', (function(row, col) {
+          return function() { handleCellClick(row, col); };
+        })(r, c));
+        gridContainer.appendChild(cell);
+      }
+    }
+    updateWinHighlight();
+  }
+
+  // ---------- GAME START ----------
+  function startGame() {
+    if (gameActive || filledCount !== 25) return;
+    for (let i=0;i<5;i++) for (let j=0;j<5;j++) if (gridNumbers[i][j] === null) return;
+    // reset marks & clear undo
+    marked = Array(5).fill().map(() => Array(5).fill(false));
+    gameUndoStack = [];
+    bingoLettersLit = [false, false, false, false, false];
+    updateBingoLettersUI();
+    gameActive = true;
+    gameWon = false;
+    phaseLabel.innerText = "🎯 PLAY";
+    statusMsgDiv.innerText = "🎯 Click any number to mark it. Complete lines to light BINGO!";
+    renderGrid();
+  }
+
+  function tryAutoStart() {
+    if (!gameActive && filledCount === 25 && !gameWon) {
+      startGame();
+    }
+  }
+
+  // ---------- CLICK ----------
+  function handleCellClick(row, col) {
+    if (gameWon) {
+      statusMsgDiv.innerText = "Game over! Press NEW GAME to play again.";
+      return;
+    }
+
+    // SETUP MODE
+    if (!gameActive) {
+      if (gridNumbers[row][col] !== null) {
+        statusMsgDiv.innerText = `Cell has ${gridNumbers[row][col]}. Use UNDO or NEW GAME.`;
+        return;
+      }
+      if (nextNumber > 25) {
+        if (filledCount === 25) tryAutoStart();
+        else statusMsgDiv.innerText = "Error: reset game.";
+        return;
+      }
+      const assigned = nextNumber;
+      gridNumbers[row][col] = assigned;
+      filledCount++;
+      nextNumber++;
+      renderGrid();
+      if (filledCount === 25) {
+        statusMsgDiv.innerText = "✓ Full grid! Starting game...";
+        tryAutoStart();
+      } else {
+        statusMsgDiv.innerText = `Placed ${assigned}. Next: ${nextNumber} | ${25-filledCount} left`;
+      }
+      return;
+    }
+
+    // GAME ACTIVE MODE
+    if (gameActive && !gameWon) {
+      const num = gridNumbers[row][col];
+      if (num === null) return;
+      
+      if (!marked[row][col]) {
+        // mark
+        marked[row][col] = true;
+        gameUndoStack.push({ row, col });
+        renderGrid();
+        refreshBingoLetters();
+        updateWinHighlight();
+        if (gameWon) {
+          phaseLabel.innerText = "🏆 BINGO! 🏆";
+          statusMsgDiv.innerText = "🎉 YOU WIN! Full BINGO! Press NEW GAME 🎉";
+          renderGrid();
+        } else {
+          const lineCount = countCompletedLinesTotal();
+          statusMsgDiv.innerText = lineCount > 0 ? `✓ Marked ${num} | ${lineCount} line(s) completed!` : `✓ Marked ${num}`;
+        }
+      } else {
+        // unmark
+        marked[row][col] = false;
+        for (let i = gameUndoStack.length - 1; i >= 0; i--) {
+          if (gameUndoStack[i].row === row && gameUndoStack[i].col === col) {
+            gameUndoStack.splice(i, 1);
+            break;
+          }
+        }
+        renderGrid();
+        refreshBingoLetters();
+        updateWinHighlight();
+        if (!(bingoLettersLit[0] && bingoLettersLit[1] && bingoLettersLit[2] && bingoLettersLit[3] && bingoLettersLit[4]) && gameWon) {
+          gameWon = false;
+          gameActive = true;
+          phaseLabel.innerText = "🎯 PLAY";
+          statusMsgDiv.innerText = "Unmarked, game resumed.";
+        } else {
+          statusMsgDiv.innerText = `↺ Unmarked ${num}`;
+        }
+      }
+    }
+  }
+
+  // ---------- UNDO (setup + game) ----------
+  function undoLast() {
+    if (gameWon) {
+      statusMsgDiv.innerText = "Game over. Press NEW GAME.";
+      return;
+    }
+
+    // GAME MODE UNDO
+    if (gameActive) {
+      if (gameUndoStack.length === 0) {
+        statusMsgDiv.innerText = "Nothing to undo.";
+        return;
+      }
+      const last = gameUndoStack.pop();
+      const { row, col } = last;
+      if (marked[row][col]) {
+        marked[row][col] = false;
+        renderGrid();
+        refreshBingoLetters();
+        updateWinHighlight();
+        statusMsgDiv.innerText = `↩️ Undo marked ${gridNumbers[row][col]}`;
+        if (gameWon) {
+          gameWon = false;
+          gameActive = true;
+          phaseLabel.innerText = "🎯 PLAY";
+          statusMsgDiv.innerText = `↩️ Undo, game resumed.`;
+        }
+      } else {
+        statusMsgDiv.innerText = "Undo stack error.";
+        gameUndoStack = [];
+      }
+      return;
+    }
+
+    // SETUP MODE UNDO
+    if (filledCount === 0) {
+      statusMsgDiv.innerText = "Nothing to undo.";
+      return;
+    }
+    let maxVal = -1, maxRow = -1, maxCol = -1;
+    for (let i=0;i<5;i++) {
+      for (let j=0;j<5;j++) {
+        let v = gridNumbers[i][j];
+        if (v !== null && v > maxVal) {
+          maxVal = v;
+          maxRow = i;
+          maxCol = j;
+        }
+      }
+    }
+    if (maxVal === -1) return;
+    gridNumbers[maxRow][maxCol] = null;
+    filledCount--;
+    nextNumber = maxVal;
+    renderGrid();
+    statusMsgDiv.innerText = `Undo: removed ${maxVal}. Next auto number: ${nextNumber}`;
+    if (gameActive) gameActive = false;
+    phaseLabel.innerText = "⚙️ SETUP";
+    resetBingoLetters();
+    updateWinHighlight();
+  }
+
+  // ---------- RANDOM FILL ----------
+  function randomFill() {
+    if (gameActive) {
+      statusMsgDiv.innerText = "Game active! Use NEW GAME first.";
+      return;
+    }
+    if (gameWon) {
+      statusMsgDiv.innerText = "Game finished. Press NEW GAME.";
+      return;
+    }
+    let numbers = Array.from({length: 25}, (_, i) => i+1);
+    for (let i = numbers.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [numbers[i], numbers[j]] = [numbers[j], numbers[i]];
+    }
+    let idx = 0;
+    for (let i=0;i<5;i++) {
+      for (let j=0;j<5;j++) {
+        gridNumbers[i][j] = numbers[idx++];
+      }
+    }
+    filledCount = 25;
+    nextNumber = 26;
+    marked = Array(5).fill().map(() => Array(5).fill(false));
+    gameUndoStack = [];
+    bingoLettersLit = [false, false, false, false, false];
+    updateBingoLettersUI();
+    gameActive = false;
+    gameWon = false;
+    renderGrid();
+    startGame();
+    statusMsgDiv.innerText = "🎲 Random numbers placed! Click numbers to mark them.";
+  }
+
+  // ---------- RESET ----------
+  function fullReset() {
+    gridNumbers = Array(5).fill().map(() => Array(5).fill(null));
+    marked = Array(5).fill().map(() => Array(5).fill(false));
+    gameUndoStack = [];
+    nextNumber = 1;
+    filledCount = 0;
+    gameActive = false;
+    gameWon = false;
+    bingoLettersLit = [false, false, false, false, false];
+    updateBingoLettersUI();
+    phaseLabel.innerText = "⚙️ SETUP";
+    statusMsgDiv.innerText = "Click empty cell";
+    renderGrid();
+  }
+
+  // ---------- INFO ----------
+  function showInfo() {
+    statusMsgDiv.innerText = "🎯 RULES: Fill grid (auto/random). Click any number to mark it. Complete lines light up and fill BINGO. 5 letters = WIN!";
+    setTimeout(() => {
+      if (statusMsgDiv.innerText.includes("RULES") && !gameActive && filledCount !== 25) 
+        statusMsgDiv.innerText = "Click empty cell → auto fills 1-25";
+      else if (gameActive && !gameWon) 
+        statusMsgDiv.innerText = "Click numbers to mark them. Complete lines to light BINGO.";
+      else if (gameWon) 
+        statusMsgDiv.innerText = "Game finished. NEW GAME to play again.";
+    }, 4000);
+  }
+
+  // ---------- EVENTS ----------
+  undoBtn.addEventListener('click', undoLast);
+  resetAllBtn.addEventListener('click', fullReset);
+  randomFillBtn.addEventListener('click', randomFill);
+  infoIconBtn.addEventListener('click', showInfo);
+
+  // ---------- INIT ----------
+  fullReset();
+</script>
+</body>
+</html>
