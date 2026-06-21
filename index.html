@@ -1,10 +1,9 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-  <title>BINGO · Line Highlight</title>
+  <title>BINGO</title>
   <style>
     * {
       box-sizing: border-box;
@@ -14,57 +13,69 @@
     }
 
     body {
-      font-family: 'Courier New', 'Segoe UI', monospace;
-      background: white;
+      font-family: 'Courier New', monospace;
+      background: #0a0a0a;
       height: 100vh;
       width: 100vw;
       overflow: hidden;
       display: flex;
       justify-content: center;
       align-items: center;
-      padding: 12px;
+      padding: 16px;
       margin: 0;
     }
 
     .bingo-container {
-      max-width: 900px;
+      max-width: 600px;
       width: 100%;
       height: auto;
       max-height: 98vh;
-      background: white;
-      border: 2px solid black;
-      padding: 12px 12px 16px 12px;
+      background: #1a1a1a;
+      border: 2px solid #333;
+      border-radius: 8px;
+      padding: 16px 16px 20px 16px;
       display: flex;
       flex-direction: column;
-      box-shadow: none;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.8);
     }
 
     .bingo-letters {
       display: flex;
       justify-content: space-between;
-      gap: 6px;
+      gap: 4px;
       margin-bottom: 12px;
-      border: 1px solid black;
-      padding: 8px 8px;
-      background: white;
-      font-size: 20px;
+      padding: 4px 4px;
+      background: transparent;
     }
 
     .letter-slot {
       flex: 1;
       text-align: center;
-      font-size: clamp(1.2rem, 6vw, 2rem);
-      font-weight: bold;
-      font-family: monospace;
-      padding: 4px 0;
-      border: 1px solid black;
-      background: white;
-      color: black;
+      font-size: clamp(1.8rem, 8vw, 3rem);
+      font-weight: 900;
+      font-family: 'Courier New', monospace;
+      padding: 6px 0;
+      background: transparent;
+      color: #2a2a2a;
+      transition: color 0.3s ease;
+      letter-spacing: 2px;
+      text-shadow: none;
     }
 
-    .letter-slot.lit {
-      background: #222;
-      color: white;
+    .letter-slot.lit-b {
+      color: #4ade80;
+    }
+    .letter-slot.lit-i {
+      color: #60a5fa;
+    }
+    .letter-slot.lit-n {
+      color: #fbbf24;
+    }
+    .letter-slot.lit-g {
+      color: #4ade80;
+    }
+    .letter-slot.lit-o {
+      color: #f87171;
     }
 
     .info-row {
@@ -73,25 +84,591 @@
       align-items: center;
       gap: 10px;
       margin-bottom: 12px;
-      border: 1px solid black;
-      padding: 6px 10px;
-      background: white;
+      padding: 8px 12px;
+      background: #222;
+      border-radius: 4px;
+      border: 1px solid #333;
     }
 
     .game-status {
-      font-size: 0.8rem;
-      font-weight: bold;
+      font-size: 0.85rem;
+      font-weight: 700;
       font-family: monospace;
-      border: 1px solid black;
-      padding: 4px 8px;
+      color: #4ade80;
       white-space: nowrap;
+      letter-spacing: 1px;
+    }
+
+    .game-status.setup {
+      color: #fbbf24;
     }
 
     .message-area {
       font-family: monospace;
       font-size: 0.7rem;
+      color: #888;
       word-break: break-word;
-      border: 1px solid black;
+      flex: 1;
+      overflow: hidden;
+      min-height: 2em;
+      text-align: right;
+    }
+
+    .message-area .highlight {
+      color: #fff;
+    }
+
+    .bingo-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      background-color: #1a1a1a;
+      border: 2px solid #333;
+      border-radius: 4px;
+      margin-bottom: 14px;
+      aspect-ratio: 1 / 1;
+      overflow: hidden;
+    }
+
+    .grid-cell {
+      border: 1px solid #2a2a2a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: clamp(1.2rem, 5vw, 1.8rem);
+      font-weight: 700;
+      font-family: 'Courier New', monospace;
+      background: #1a1a1a;
+      cursor: pointer;
+      color: #e0e0e0;
+      text-align: center;
+      padding: 0;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+    }
+
+    .grid-cell:hover {
+      background: #2a2a2a;
+    }
+
+    .grid-cell.marked {
+      text-decoration: line-through;
+      text-decoration-thickness: 3px;
+      text-decoration-color: #4ade80;
+      background: #1e1e1e;
+      color: #555;
+      border-color: #333;
+    }
+
+    .grid-cell.win-highlight {
+      background: #2a2a2a !important;
+      font-weight: 900;
+      text-decoration: none;
+      color: #4ade80 !important;
+      border-color: #4ade80;
+      position: relative;
+      z-index: 2;
+    }
+
+    .grid-cell.win-highlight.marked {
+      background: #2a2a2a !important;
+      text-decoration: line-through;
+      text-decoration-color: #4ade80;
+      color: #4ade80 !important;
+    }
+
+    .grid-cell.empty {
+      color: #333;
+    }
+
+    .action-bar {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin: 6px 0 4px 0;
+    }
+
+    button {
+      font-family: 'Courier New', monospace;
+      font-size: 0.75rem;
+      background: #2a2a2a;
+      border: 1px solid #444;
+      color: #ccc;
+      padding: 8px 12px;
+      cursor: pointer;
+      font-weight: 700;
+      flex: 1;
+      white-space: nowrap;
+      transition: all 0.15s;
+      border-radius: 4px;
+      letter-spacing: 0.5px;
+    }
+
+    button:hover {
+      background: #3a3a3a;
+      border-color: #666;
+      color: #fff;
+    }
+
+    button:active {
+      background: #4a4a4a;
+      transform: scale(0.97);
+    }
+
+    .info-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-top: 8px;
+      padding-top: 10px;
+      border-top: 1px solid #2a2a2a;
+      flex-wrap: wrap;
+    }
+
+    .icon-info {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 26px;
+      height: 26px;
+      border: 1.5px solid #444;
+      border-radius: 50%;
+      font-size: 0.9rem;
+      font-weight: bold;
+      cursor: pointer;
+      background: transparent;
+      color: #666;
+      flex-shrink: 0;
+      transition: all 0.15s;
+    }
+
+    .icon-info:hover {
+      border-color: #888;
+      color: #ccc;
+    }
+
+    .instruction-text {
+      font-family: 'Courier New', monospace;
+      font-size: 0.6rem;
+      color: #555;
+      flex: 1;
+      line-height: 1.3;
+      letter-spacing: 0.3px;
+    }
+
+    .line-counter {
+      color: #4ade80;
+      font-weight: 700;
+      font-size: 0.8rem;
+    }
+
+    @media (max-width: 500px) {
+      body { padding: 8px; }
+      .bingo-container { padding: 10px; }
+      .letter-slot { padding: 4px 0; }
+      button { padding: 6px 8px; font-size: 0.65rem; }
+      .instruction-text { font-size: 0.5rem; }
+      .game-status { font-size: 0.7rem; }
+      .info-row { padding: 6px 8px; }
+    }
+
+    @media (max-height: 700px) {
+      .bingo-letters { margin-bottom: 6px; padding: 2px; }
+      .info-row { margin-bottom: 6px; padding: 4px 8px; }
+      .action-bar { margin: 4px 0; }
+      .info-footer { margin-top: 4px; padding-top: 6px; }
+    }
+  </style>
+</head>
+<body>
+<div class="bingo-container">
+  <div class="bingo-letters" id="bingoLettersPanel">
+    <div class="letter-slot" data-letter="B">B</div>
+    <div class="letter-slot" data-letter="I">I</div>
+    <div class="letter-slot" data-letter="N">N</div>
+    <div class="letter-slot" data-letter="G">G</div>
+    <div class="letter-slot" data-letter="O">O</div>
+  </div>
+
+  <div class="info-row">
+    <div class="game-status" id="gamePhaseLabel">⚙️ SETUP</div>
+    <div class="message-area" id="statusMessage">Click empty cell → auto fills 1-25</div>
+  </div>
+
+  <div class="bingo-grid" id="bingoGrid"></div>
+
+  <div class="action-bar">
+    <button id="randomFillBtn">🎲 RANDOM FILL</button>
+    <button id="undoBtn">↩️ UNDO</button>
+    <button id="resetAllBtn">🔄 NEW GAME</button>
+  </div>
+  
+  <div class="info-footer">
+    <div class="icon-info" id="infoIconBtn" title="Game rules">ⓘ</div>
+    <div class="instruction-text" id="inlineInstructions">
+      Fill grid (auto/random). Then click any number to mark it. Complete lines light up and fill BINGO.
+    </div>
+  </div>
+</div>
+
+<script>
+  // ---------- STATE ----------
+  let gridNumbers = Array(5).fill().map(() => Array(5).fill(null));
+  let marked = Array(5).fill().map(() => Array(5).fill(false));
+  let nextNumber = 1;
+  let filledCount = 0;
+  let gameActive = false;
+  let gameWon = false;
+  let gameUndoStack = [];
+  let markedCount = 0;
+
+  let bingoLettersLit = [false, false, false, false, false];
+
+  const gridContainer = document.getElementById('bingoGrid');
+  const phaseLabel = document.getElementById('gamePhaseLabel');
+  const statusMsgDiv = document.getElementById('statusMessage');
+  const undoBtn = document.getElementById('undoBtn');
+  const resetAllBtn = document.getElementById('resetAllBtn');
+  const randomFillBtn = document.getElementById('randomFillBtn');
+  const infoIconBtn = document.getElementById('infoIconBtn');
+  const letterSlots = document.querySelectorAll('.letter-slot');
+
+  // ---------- UI ----------
+  function updateBingoLettersUI() {
+    const colorClasses = ['lit-b', 'lit-i', 'lit-n', 'lit-g', 'lit-o'];
+    for (let i = 0; i < letterSlots.length; i++) {
+      letterSlots[i].className = 'letter-slot';
+      if (bingoLettersLit[i]) {
+        letterSlots[i].classList.add(colorClasses[i]);
+      }
+    }
+  }
+  
+  function resetBingoLetters() {
+    bingoLettersLit = [false, false, false, false, false];
+    updateBingoLettersUI();
+  }
+
+  // ---------- LINE LOGIC ----------
+  function getCompletedLines() {
+    let rows = [], cols = [], diags = [];
+    for (let r = 0; r < 5; r++) {
+      let ok = true;
+      for (let c = 0; c < 5; c++) if (!marked[r][c]) { ok = false; break; }
+      if (ok) rows.push(r);
+    }
+    for (let c = 0; c < 5; c++) {
+      let ok = true;
+      for (let r = 0; r < 5; r++) if (!marked[r][c]) { ok = false; break; }
+      if (ok) cols.push(c);
+    }
+    let d1 = true;
+    for (let i = 0; i < 5; i++) if (!marked[i][i]) { d1 = false; break; }
+    if (d1) diags.push('main');
+    let d2 = true;
+    for (let i = 0; i < 5; i++) if (!marked[i][4-i]) { d2 = false; break; }
+    if (d2) diags.push('anti');
+    return { rows, cols, diags };
+  }
+
+  function countCompletedLinesTotal() {
+    const lines = getCompletedLines();
+    return lines.rows.length + lines.cols.length + lines.diags.length;
+  }
+
+  function refreshBingoLetters() {
+    if (gameWon) return;
+    let total = countCompletedLinesTotal();
+    let lit = Math.min(total, 5);
+    let newLit = [false, false, false, false, false];
+    for (let i = 0; i < lit; i++) newLit[i] = true;
+    let changed = false;
+    for (let i = 0; i < 5; i++) if (bingoLettersLit[i] !== newLit[i]) { changed = true; break; }
+    if (changed) {
+      bingoLettersLit = newLit;
+      updateBingoLettersUI();
+      if (bingoLettersLit[0] && bingoLettersLit[1] && bingoLettersLit[2] && bingoLettersLit[3] && bingoLettersLit[4]) {
+        gameWon = true;
+        gameActive = false;
+        phaseLabel.innerText = "🏆 BINGO! 🏆";
+        statusMsgDiv.innerHTML = "🎉 BINGO! Complete! Press NEW GAME";
+      } else if (total > 0 && !gameWon) {
+        statusMsgDiv.innerHTML = `<span class="line-counter">${total}</span> line(s) completed!`;
+      }
+    }
+  }
+
+  // ---------- HIGHLIGHT ----------
+  function updateWinHighlight() {
+    const allCells = document.querySelectorAll('.grid-cell');
+    allCells.forEach(cell => cell.classList.remove('win-highlight'));
+    if (gameWon || !gameActive) return;
+
+    const completed = getCompletedLines();
+    const highlightSet = new Set();
+
+    for (let r of completed.rows) for (let c = 0; c < 5; c++) highlightSet.add(`${r},${c}`);
+    for (let c of completed.cols) for (let r = 0; r < 5; r++) highlightSet.add(`${r},${c}`);
+    if (completed.diags.includes('main')) for (let i = 0; i < 5; i++) highlightSet.add(`${i},${i}`);
+    if (completed.diags.includes('anti')) for (let i = 0; i < 5; i++) highlightSet.add(`${i},${4-i}`);
+
+    for (let i = 0; i < 5; i++) {
+      for (let j = 0; j < 5; j++) {
+        if (highlightSet.has(`${i},${j}`)) {
+          const idx = i * 5 + j;
+          if (allCells[idx]) allCells[idx].classList.add('win-highlight');
+        }
+      }
+    }
+  }
+
+  // ---------- RENDER ----------
+  function renderGrid() {
+    gridContainer.innerHTML = '';
+    for (let r = 0; r < 5; r++) {
+      for (let c = 0; c < 5; c++) {
+        const num = gridNumbers[r][c];
+        const isMarked = marked[r][c];
+        const cell = document.createElement('div');
+        cell.className = 'grid-cell';
+        if (isMarked) cell.classList.add('marked');
+        if (num === null) cell.classList.add('empty');
+        cell.innerText = (num !== null) ? num : '·';
+        cell.addEventListener('click', (function(row, col) {
+          return function() { handleCellClick(row, col); };
+        })(r, c));
+        gridContainer.appendChild(cell);
+      }
+    }
+    updateWinHighlight();
+  }
+
+  // ---------- GAME START ----------
+  function startGame() {
+    if (gameActive || filledCount !== 25) return;
+    for (let i=0;i<5;i++) for (let j=0;j<5;j++) if (gridNumbers[i][j] === null) return;
+    marked = Array(5).fill().map(() => Array(5).fill(false));
+    gameUndoStack = [];
+    markedCount = 0;
+    bingoLettersLit = [false, false, false, false, false];
+    updateBingoLettersUI();
+    gameActive = true;
+    gameWon = false;
+    phaseLabel.innerText = "▶ PLAY";
+    phaseLabel.className = "game-status";
+    statusMsgDiv.innerHTML = "Click any number to mark it";
+    renderGrid();
+  }
+
+  function tryAutoStart() {
+    if (!gameActive && filledCount === 25 && !gameWon) {
+      startGame();
+    }
+  }
+
+  // ---------- CLICK ----------
+  function handleCellClick(row, col) {
+    if (gameWon) {
+      statusMsgDiv.innerHTML = "Game complete! Press NEW GAME";
+      return;
+    }
+
+    if (!gameActive) {
+      if (gridNumbers[row][col] !== null) {
+        statusMsgDiv.innerHTML = `Cell has ${gridNumbers[row][col]}. Use UNDO or NEW GAME.`;
+        return;
+      }
+      if (nextNumber > 25) {
+        if (filledCount === 25) tryAutoStart();
+        else statusMsgDiv.innerHTML = "Error: reset game.";
+        return;
+      }
+      const assigned = nextNumber;
+      gridNumbers[row][col] = assigned;
+      filledCount++;
+      nextNumber++;
+      renderGrid();
+      if (filledCount === 25) {
+        statusMsgDiv.innerHTML = "✓ Full grid! Starting game...";
+        tryAutoStart();
+      } else {
+        statusMsgDiv.innerHTML = `Placed ${assigned}. Next: ${nextNumber} | ${25-filledCount} left`;
+      }
+      return;
+    }
+
+    if (gameActive && !gameWon) {
+      const num = gridNumbers[row][col];
+      if (num === null) return;
+      
+      if (!marked[row][col]) {
+        marked[row][col] = true;
+        markedCount++;
+        gameUndoStack.push({ row, col });
+        renderGrid();
+        refreshBingoLetters();
+        updateWinHighlight();
+        if (gameWon) {
+          phaseLabel.innerText = "🏆 BINGO! 🏆";
+          statusMsgDiv.innerHTML = "🎉 BINGO! Complete! Press NEW GAME";
+          renderGrid();
+        } else {
+          const lineCount = countCompletedLinesTotal();
+          if (lineCount > 0) {
+            statusMsgDiv.innerHTML = `Marked ${num} &nbsp;|&nbsp; <span class="line-counter">${lineCount}</span> line(s) completed!`;
+          } else {
+            statusMsgDiv.innerHTML = `Marked ${num}`;
+          }
+        }
+      } else {
+        statusMsgDiv.innerHTML = `Cell ${num} already marked`;
+      }
+    }
+  }
+
+  // ---------- UNDO ----------
+  function undoLast() {
+    if (gameWon) {
+      statusMsgDiv.innerHTML = "Game complete. Press NEW GAME";
+      return;
+    }
+
+    if (!gameActive) {
+      if (filledCount === 0) {
+        statusMsgDiv.innerHTML = "Nothing to undo.";
+        return;
+      }
+      let maxVal = -1, maxRow = -1, maxCol = -1;
+      for (let i=0;i<5;i++) {
+        for (let j=0;j<5;j++) {
+          let v = gridNumbers[i][j];
+          if (v !== null && v > maxVal) {
+            maxVal = v;
+            maxRow = i;
+            maxCol = j;
+          }
+        }
+      }
+      if (maxVal === -1) return;
+      gridNumbers[maxRow][maxCol] = null;
+      filledCount--;
+      nextNumber = maxVal;
+      renderGrid();
+      statusMsgDiv.innerHTML = `Undo: removed ${maxVal}. Next: ${nextNumber}`;
+      if (gameActive) gameActive = false;
+      phaseLabel.innerText = "⚙️ SETUP";
+      phaseLabel.className = "game-status setup";
+      resetBingoLetters();
+      updateWinHighlight();
+      return;
+    }
+
+    if (gameUndoStack.length === 0) {
+      statusMsgDiv.innerHTML = "Nothing to undo.";
+      return;
+    }
+    
+    const last = gameUndoStack.pop();
+    const { row, col } = last;
+    
+    if (marked[row][col]) {
+      marked[row][col] = false;
+      markedCount--;
+      renderGrid();
+      refreshBingoLetters();
+      updateWinHighlight();
+      statusMsgDiv.innerHTML = `↩️ Undo marked ${gridNumbers[row][col]}`;
+      
+      if (gameWon) {
+        gameWon = false;
+        gameActive = true;
+        phaseLabel.innerText = "▶ PLAY";
+        phaseLabel.className = "game-status";
+        statusMsgDiv.innerHTML = `↩️ Undo, game resumed.`;
+      }
+    } else {
+      statusMsgDiv.innerHTML = "Undo error.";
+      gameUndoStack = [];
+    }
+  }
+
+  // ---------- RANDOM FILL ----------
+  function randomFill() {
+    if (gameActive && !gameWon) {
+      statusMsgDiv.innerHTML = "Game active! Use NEW GAME first.";
+      return;
+    }
+    if (gameWon) {
+      statusMsgDiv.innerHTML = "Game complete. Press NEW GAME to play again.";
+      return;
+    }
+    let numbers = Array.from({length: 25}, (_, i) => i+1);
+    for (let i = numbers.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [numbers[i], numbers[j]] = [numbers[j], numbers[i]];
+    }
+    let idx = 0;
+    for (let i=0;i<5;i++) {
+      for (let j=0;j<5;j++) {
+        gridNumbers[i][j] = numbers[idx++];
+      }
+    }
+    filledCount = 25;
+    nextNumber = 26;
+    marked = Array(5).fill().map(() => Array(5).fill(false));
+    gameUndoStack = [];
+    markedCount = 0;
+    bingoLettersLit = [false, false, false, false, false];
+    updateBingoLettersUI();
+    gameActive = false;
+    gameWon = false;
+    renderGrid();
+    startGame();
+    statusMsgDiv.innerHTML = "🎲 Random numbers placed! Click numbers to mark them.";
+  }
+
+  // ---------- RESET ----------
+  function fullReset() {
+    gridNumbers = Array(5).fill().map(() => Array(5).fill(null));
+    marked = Array(5).fill().map(() => Array(5).fill(false));
+    gameUndoStack = [];
+    markedCount = 0;
+    nextNumber = 1;
+    filledCount = 0;
+    gameActive = false;
+    gameWon = false;
+    bingoLettersLit = [false, false, false, false, false];
+    updateBingoLettersUI();
+    phaseLabel.innerText = "⚙️ SETUP";
+    phaseLabel.className = "game-status setup";
+    statusMsgDiv.innerHTML = "Click empty cell → auto fills 1-25";
+    renderGrid();
+  }
+
+  // ---------- INFO ----------
+  function showInfo() {
+    statusMsgDiv.innerHTML = "🎯 RULES: Fill grid (auto/random). Click numbers to mark. Complete lines light up! 5 letters = BINGO!";
+    setTimeout(() => {
+      if (statusMsgDiv.innerHTML.includes("RULES") && !gameActive && filledCount !== 25) 
+        statusMsgDiv.innerHTML = "Click empty cell → auto fills 1-25";
+      else if (gameActive && !gameWon) 
+        statusMsgDiv.innerHTML = "Click numbers to mark them. Complete lines to light BINGO.";
+      else if (gameWon) 
+        statusMsgDiv.innerHTML = "Game complete! Press NEW GAME";
+    }, 4000);
+  }
+
+  // ---------- EVENTS ----------
+  undoBtn.addEventListener('click', undoLast);
+  resetAllBtn.addEventListener('click', fullReset);
+  randomFillBtn.addEventListener('click', randomFill);
+  infoIconBtn.addEventListener('click', showInfo);
+
+  // ---------- INIT ----------
+  fullReset();
+</script>
+</body>
+</html>      border: 1px solid black;
       padding: 4px 8px;
       flex: 1;
       overflow: hidden;
